@@ -1,3 +1,92 @@
 protected route : https://reactrouter.com/6.28.0/start/tutorial
 
+
 Crud: https://axios-http.com/docs/example
+
+import axios from "axios";
+
+export const api = axios.create({
+  baseURL: "https://your-private-api.com/api",
+  headers: {
+    "Content-Type": "application/json"
+  }
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+
+import React, { useEffect, useState } from "react";
+import { api } from "./api/api";
+
+function App() {
+  const [users, setUsers] = useState([]);
+  const [name, setName] = useState("");
+  const [editId, setEditId] = useState(null);
+
+  // READ
+  const fetchUsers = async () => {
+    const res = await api.get("/users");
+    setUsers(res.data);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // CREATE & UPDATE
+  const handleSubmit = async () => {
+    if (editId) {
+      await api.put(`/users/${editId}`, { name });
+      setEditId(null);
+    } else {
+      await api.post("/users", { name });
+    }
+    setName("");
+    fetchUsers();
+  };
+
+  // DELETE
+  const handleDelete = async (id) => {
+    await api.delete(`/users/${id}`);
+    fetchUsers();
+  };
+
+  // EDIT
+  const handleEdit = (user) => {
+    setName(user.name);
+    setEditId(user.id);
+  };
+
+  return (
+    <div style={{ padding: "30px" }}>
+      <h2>React CRUD with Private API</h2>
+
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Enter name"
+      />
+      <button onClick={handleSubmit}>
+        {editId ? "Update" : "Add"}
+      </button>
+
+      <ul>
+        {users.map((user) => (
+          <li key={user.id}>
+            {user.name}
+            <button onClick={() => handleEdit(user)}>Edit</button>
+            <button onClick={() => handleDelete(user.id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default App;
